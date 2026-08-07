@@ -1,0 +1,1 @@
+This file is served by Hono's serveStatic middleware.

@@ -2,6 +2,9 @@
 
 A deployable REST API using Hono, PostgreSQL, Drizzle ORM, Zod v4, and Vercel Functions.
 
+## My Github reporsitory
+https://github.com/Yossaphol/IOT-3-1-2026/tree/main/week05/assignment/Restful_API-Week01-Assignment-1
+
 ## Data model
 
 ```text

@@ -44,43 +44,10 @@
 
 			<div class="row">
 				<div class="col-md-12">
-
-					<h3>Color LED Control</h3>
-
-					<button class="btn btn-material-red-500 publish-button"
-							data-value="RED_ON">
-						Red ON
-					</button>
-
-					<button class="btn btn-default publish-button"
-							data-value="RED_OFF">
-						Red OFF
-					</button>
-
-					<br><br>
-
-					<button class="btn btn-material-green-500 publish-button"
-							data-value="GREEN_ON">
-						Green ON
-					</button>
-
-					<button class="btn btn-default publish-button"
-							data-value="GREEN_OFF">
-						Green OFF
-					</button>
-
-					<br><br>
-
-					<button class="btn btn-material-blue-500 publish-button"
-							data-value="BLUE_ON">
-						Blue ON
-					</button>
-
-					<button class="btn btn-default publish-button"
-							data-value="BLUE_OFF">
-						Blue OFF
-					</button>
-
+						<button class="btn btn-material-green-A400 publish-button" data-value="on">ON<div class="ripple-wrapper"></div>
+						</button>
+						<button class="btn btn-material-deep-orange-A400 publish-button" data-value="off">OFF<div class="ripple-wrapper"></div>
+						</button>
 				</div>
 			</div>
 		</div>
@@ -101,7 +68,7 @@
 				var MQTTbroker = 'mqtt-dashboard.com';
 				var MQTTport = 8884;
 				// Publish to topic
-				var MQTTpublishTopic = 'yossaphol/color';
+				var MQTTpublishTopic = 'yossaphol/temp';
 
 				$('#broker-name').text(MQTTbroker + ':' + MQTTport);
 				$('#topic-name').text(MQTTpublishTopic);

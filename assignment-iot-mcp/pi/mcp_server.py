@@ -1,9 +1,9 @@
 """MCP Server บน Raspberry Pi (ต่อยอดจาก week12/server.py)
 
 Tool ทั้ง 4 ตามโจทย์:
-  1. read_pi_sensors      อ่านเซนเซอร์บนบอร์ดโดยตรง (SHT31, Ultrasonic, สถานะ LED)
+  1. read_pi_sensors      อ่านอุปกรณ์บนบอร์ดโดยตรง (ระยะจาก Ultrasonic, สถานะ LED)
   2. control_pi_device    สั่งอุปกรณ์บน Pi (LED)
-  3. read_from_mqtt       อ่านค่าล่าสุดจาก MQTT (รวมถึงข้อมูลจาก LoRa node)
+  3. read_from_mqtt       อ่านค่าล่าสุดจาก MQTT รวมถึงความเข้มแสงจาก Arduino LoRa node
   4. publish_to_mqtt      ส่งค่าเข้า MQTT (จำกัดเฉพาะ topic ใน whitelist)
 
 รัน:  python mcp_server.py        (เปิดที่ http://0.0.0.0:8000/mcp)
@@ -41,14 +41,14 @@ def apply_led(action: str) -> str:
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
-        client.subscribe([("pi/#", 0), ("lora/#", 0)])
+        client.subscribe([(config.full_topic("pi/#"), 0), (config.full_topic("lora/#"), 0)])
         logging.info("MQTT connected")
 
 
 def on_message(client, userdata, msg):
     payload = msg.payload.decode("utf-8", errors="replace")
     with latest_lock:
-        latest[msg.topic] = {"value": payload, "time": time.time()}
+        latest[config.short_topic(msg.topic)] = {"value": payload, "time": time.time()}
     # คำสั่งจาก Dashboard (หรือใครก็ตามที่ publish มาที่ pi/device/led)
     if msg.topic == config.TOPIC_LED_CMD and payload.upper() in ("ON", "OFF"):
         apply_led(payload)
@@ -68,9 +68,10 @@ mcp = MCPServer("RaspberryPi-IoT")
 
 @mcp.tool()
 def read_pi_sensors() -> str:
-    """Read the sensors attached to the Raspberry Pi right now:
-    temperature (C), humidity (%RH), distance from the ultrasonic sensor (cm)
-    and the current LED state."""
+    """Read the devices attached to the Raspberry Pi right now:
+    distance from the ultrasonic sensor (cm, null if nothing in range)
+    and the current LED state (ON/OFF).
+    Light intensity is NOT measured on the Pi: use read_from_mqtt('lora/node1/data')."""
     data = sensors.read_all()
     data["led"] = led_state
     return json.dumps(data, ensure_ascii=False)
@@ -89,9 +90,15 @@ def control_pi_device(device: str, action: str) -> str:
 
 @mcp.tool()
 def read_from_mqtt(topic: str = "") -> str:
-    """Read the latest value seen on an MQTT topic, e.g. 'pi/sensor/humidity',
-    'lora/node1/data'. Leave topic empty to list every topic seen so far
-    with its latest value."""
+    """Read the latest value seen on an MQTT topic. Known topics:
+    'lora/node1/data'      light intensity from the Arduino LoRa node,
+                           JSON {"light": percent 0-100 (higher = brighter),
+                                 "light_raw": module AO value 0-1023 (lower = brighter),
+                                 "dark": true/false from the module DO pin}
+    'pi/sensor/distance'   distance from the Pi ultrasonic sensor (cm)
+    'pi/device/led/state'  LED state (ON/OFF)
+    Leave topic empty to list every topic seen so far with its latest value.
+    LoRa data arrives about once a minute, so check age_seconds."""
     with latest_lock:
         if not topic:
             if not latest:
@@ -99,6 +106,7 @@ def read_from_mqtt(topic: str = "") -> str:
             return json.dumps(
                 {t: v["value"] for t, v in sorted(latest.items())}, ensure_ascii=False
             )
+        topic = config.short_topic(topic.strip("/"))
         item = latest.get(topic)
     if item is None:
         return f"No message received yet on '{topic}'."
@@ -108,14 +116,16 @@ def read_from_mqtt(topic: str = "") -> str:
 
 @mcp.tool()
 def publish_to_mqtt(topic: str, payload: str) -> str:
-    """Publish a message to an MQTT topic. Only whitelisted topics are allowed."""
+    """Publish a message to an MQTT topic. Only 'pi/device/led' (payload ON or OFF) is allowed."""
+    topic = config.full_topic(topic)
     if topic not in config.PUBLISH_WHITELIST:
-        return f"Error: topic not allowed. Allowed: {sorted(config.PUBLISH_WHITELIST)}"
+        allowed = sorted(config.short_topic(t) for t in config.PUBLISH_WHITELIST)
+        return f"Error: topic not allowed. Allowed: {allowed}"
     info = mqtt_client.publish(topic, payload, qos=1)
     info.wait_for_publish(timeout=5)
     if info.rc != mqtt.MQTT_ERR_SUCCESS:
         return "MQTT publish failed"
-    return f"Published '{payload}' to {topic}"
+    return f"Published '{payload}' to {config.short_topic(topic)}"
 
 
 if __name__ == "__main__":

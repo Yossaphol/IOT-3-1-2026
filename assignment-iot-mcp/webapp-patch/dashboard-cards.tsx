@@ -22,9 +22,8 @@ const api = axios.create({
 });
 
 const CARDS = [
-  { type: "temperature", label: "Temperature", unit: "°C" },
-  { type: "humidity", label: "Humidity", unit: "%" },
-  { type: "distance", label: "Distance", unit: "cm" },
+  { type: "distance", label: "Distance (Raspberry Pi)", unit: "cm" },
+  { type: "light", label: "Light (Arduino LoRa node)", unit: "%" },
 ];
 
 export function DashboardCards() {
@@ -56,7 +55,7 @@ export function DashboardCards() {
   const isOn = led.data?.state === "ON";
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {CARDS.map((c) => {
         const row = latest(c.type);
         return (

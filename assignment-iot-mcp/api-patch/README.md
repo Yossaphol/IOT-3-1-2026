@@ -17,5 +17,6 @@ apiRouter.route("/devices", devicesRouter);        // เพิ่มใต้ a
 เพิ่มใน `.env`:
 
 ```
-MQTT_URL=mqtt://localhost:1883
+MQTT_URL=mqtt://mqtt-dashboard.com:1883
+TOPIC_PREFIX=khaopad-iot-a7f3
 ```

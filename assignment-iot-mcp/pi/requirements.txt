@@ -1,5 +1,4 @@
 paho-mqtt>=2.0
-smbus3
 RPi.GPIO
 mcp
 requests

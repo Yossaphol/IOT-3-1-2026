@@ -1,4 +1,4 @@
-"""อ่านเซนเซอร์บน Pi ทุก N วินาทีแล้ว publish เข้า MQTT (ข้อ 3 -> 4 ของ assignment)
+"""วัดระยะด้วย Ultrasonic ทุก N วินาทีแล้ว publish เข้า MQTT
 
 รัน:  python publisher.py
 """
@@ -22,13 +22,8 @@ print(f"Publishing every {config.PUBLISH_INTERVAL}s to {config.MQTT_BROKER}:{con
 try:
     while True:
         data = sensors.read_all()
-        for key, topic in (
-            ("temperature", config.TOPIC_TEMPERATURE),
-            ("humidity", config.TOPIC_HUMIDITY),
-            ("distance", config.TOPIC_DISTANCE),
-        ):
-            if data[key] is not None:
-                client.publish(topic, str(data[key]), qos=1)
+        if data["distance"] is not None:
+            client.publish(config.TOPIC_DISTANCE, str(data["distance"]), qos=1)
         print("[PUB]", data)
         time.sleep(config.PUBLISH_INTERVAL)
 except KeyboardInterrupt:

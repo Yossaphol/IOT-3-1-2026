@@ -66,18 +66,28 @@ void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 static const u1_t PROGMEM APPKEY[16] = { 0xF6, 0x1A, 0xED, 0xB3, 0xB1, 0x0C, 0x90, 0x61, 0xD7, 0x04, 0x74, 0x5C, 0x52, 0x76, 0x0B, 0xBD };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
-// payload 4 ไบต์: [temp*100 (int16, big-endian)] [humidity*100 (uint16, big-endian)]
-static uint8_t mydata[4];
-
-// TODO: เปลี่ยนเป็นการอ่านเซนเซอร์จริง (เช่น SHT31 / DHT22) ตอนนี้ใช้ค่าจำลองเพื่อทดสอบสายส่ง
-float readTemperature() { return 26.5 + (millis() / 60000UL % 10) * 0.1; }
-float readHumidity()    { return 62.0; }
+// ---------------- Light sensor module (LDR, 4 ขา) ----------------
+// VCC -> 5V, GND -> GND, AO -> A0, DO -> D4
+// AO : ยิ่งสว่าง ค่ายิ่งน้อย (0-1023)
+// DO : HIGH = มืด, LOW = สว่าง (ปรับเกณฑ์ด้วยตัวหมุนบนโมดูล)
+// payload 3 ไบต์: [AO ค่าดิบ uint16 big-endian] [DO: 1 = มืด, 0 = สว่าง]
+const int LIGHT_AO_PIN = A0;
+const int LIGHT_DO_PIN = 4;     // D2, D5-D7, D10-D13 ถูกโมดูล LoRa ใช้อยู่ จึงใช้ D4
+static uint8_t mydata[3];
 
 void packPayload() {
-    int16_t  t = (int16_t)(readTemperature() * 100);
-    uint16_t h = (uint16_t)(readHumidity() * 100);
-    mydata[0] = t >> 8;  mydata[1] = t & 0xFF;
-    mydata[2] = h >> 8;  mydata[3] = h & 0xFF;
+    pinMode(LIGHT_DO_PIN, INPUT);
+    uint16_t raw = analogRead(LIGHT_AO_PIN);
+    uint8_t dark = digitalRead(LIGHT_DO_PIN) == HIGH ? 1 : 0;
+    mydata[0] = raw >> 8;
+    mydata[1] = raw & 0xFF;
+    mydata[2] = dark;
+    Serial.print(F("AO raw = "));
+    Serial.print(raw);
+    Serial.print(F("  light = "));
+    Serial.print((1023 - raw) * 100.0 / 1023.0, 1);
+    Serial.print(F(" %  DO = "));
+    Serial.println(dark ? F("dark") : F("bright"));
 }
 static osjob_t sendjob;
 

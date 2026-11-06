@@ -5,10 +5,12 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { broadcast } from "../ws.js";
 
-const CMD_TOPIC = "pi/device/led";
-const STATE_TOPIC = "pi/device/led/state";
+// ต้องตรงกับ TOPIC_PREFIX ใน pi/config.py
+const PREFIX = (process.env.TOPIC_PREFIX ?? "khaopad-iot-a7f3").replace(/\/+$/, "");
+const CMD_TOPIC = `${PREFIX}/pi/device/led`;
+const STATE_TOPIC = `${PREFIX}/pi/device/led/state`;
 
-const client = mqtt.connect(process.env.MQTT_URL ?? "mqtt://localhost:1883", {
+const client = mqtt.connect(process.env.MQTT_URL ?? "mqtt://mqtt-dashboard.com:1883", {
   username: process.env.MQTT_USER,
   password: process.env.MQTT_PASS,
 });
